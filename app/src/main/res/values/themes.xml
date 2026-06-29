@@ -1,0 +1,44 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ScientificCaculator" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+    </style>
+
+    <style name="Theme.ScientificCaculator" parent="Base.Theme.ScientificCaculator" />
+
+    <style name="CalcButton" parent="Widget.Material3.Button">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="CalcButton.Number">
+        <item name="backgroundTint">@color/btn_number</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="CalcButton.Operator">
+        <item name="backgroundTint">@color/btn_operator</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="CalcButton.Function">
+        <item name="backgroundTint">@color/btn_function</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+
+    <style name="CalcButton.Scientific">
+        <item name="backgroundTint">@color/btn_scientific</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="CalcButton.Equals">
+        <item name="backgroundTint">@color/btn_operator</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>
