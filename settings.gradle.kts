@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SEN-104-214"
+rootProject.name = "CYB-104-project"
 include(":app")
  
