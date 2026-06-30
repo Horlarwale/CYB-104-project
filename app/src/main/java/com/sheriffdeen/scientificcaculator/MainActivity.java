@@ -1,6 +1,8 @@
 package com.sheriffdeen.scientificcaculator;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridLayout;
@@ -12,12 +14,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.text.DecimalFormat;
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvInput, tvResult;
     private GridLayout scientificPanel, basicPanel;
     private Button btnMode;
     private boolean isScientificVisible = false;
+    private DecimalFormat decimalFormat = new DecimalFormat("#.##########");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +49,20 @@ public class MainActivity extends AppCompatActivity {
 
         setButtonClickListeners(basicPanel);
         setButtonClickListeners(scientificPanel);
+
+        // Optional: Live result as you type
+        tvInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                calculateLiveResult();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
     }
 
     private void setButtonClickListeners(GridLayout panel) {
@@ -73,18 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case "=":
-                String expression = tvInput.getText().toString();
-                try {
-                    double result = evaluate(expression);
-                    // Check if it's a whole number to display nicely
-                    if (result == (long) result) {
-                        tvResult.setText(String.valueOf((long) result));
-                    } else {
-                        tvResult.setText(String.valueOf(result));
-                    }
-                } catch (Exception e) {
-                    tvResult.setText("Error");
-                }
+                calculateFinalResult();
                 break;
             case "sin":
             case "cos":
@@ -98,10 +106,10 @@ public class MainActivity extends AppCompatActivity {
                 tvInput.append("sqrt(");
                 break;
             case "π":
-                tvInput.append(String.valueOf(Math.PI));
+                tvInput.append("pi");
                 break;
             case "e":
-                tvInput.append(String.valueOf(Math.E));
+                tvInput.append("e");
                 break;
             case "inv":
                 tvInput.append("1/");
@@ -112,7 +120,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // A robust mathematical expression evaluator
+    private void calculateLiveResult() {
+        String expression = tvInput.getText().toString();
+        if (expression.isEmpty()) {
+            tvResult.setText("");
+            return;
+        }
+        try {
+            double result = evaluate(expression);
+            tvResult.setText(decimalFormat.format(result));
+        } catch (Exception e) {
+            // Don't show error during live typing
+            tvResult.setText("");
+        }
+    }
+
+    private void calculateFinalResult() {
+        String expression = tvInput.getText().toString();
+        if (expression.isEmpty()) return;
+        try {
+            double result = evaluate(expression);
+            String formatted = decimalFormat.format(result);
+            tvInput.setText(formatted);
+            tvResult.setText("");
+        } catch (Exception e) {
+            tvResult.setText("Error");
+        }
+    }
+
     public static double evaluate(final String str) {
         return new Object() {
             int pos = -1, ch;
@@ -140,8 +175,8 @@ public class MainActivity extends AppCompatActivity {
             double parseExpression() {
                 double x = parseTerm();
                 for (;;) {
-                    if      (eat('+')) x += parseTerm(); // addition
-                    else if (eat('-')) x -= parseTerm(); // subtraction
+                    if      (eat('+')) x += parseTerm();
+                    else if (eat('-')) x -= parseTerm();
                     else return x;
                 }
             }
@@ -149,47 +184,52 @@ public class MainActivity extends AppCompatActivity {
             double parseTerm() {
                 double x = parseFactor();
                 for (;;) {
-                    if      (eat('*')) x *= parseFactor(); // multiplication
-                    else if (eat('/')) x /= parseFactor(); // division
+                    if      (eat('*')) x *= parseFactor();
+                    else if (eat('/')) x /= parseFactor();
                     else return x;
                 }
             }
 
             double parseFactor() {
-                if (eat('+')) return +parseFactor(); // unary plus
-                if (eat('-')) return -parseFactor(); // unary minus
+                if (eat('+')) return +parseFactor();
+                if (eat('-')) return -parseFactor();
 
                 double x;
                 int startPos = this.pos;
-                if (eat('(')) { // parentheses
+                if (eat('(')) {
                     x = parseExpression();
-                    if (!eat(')')) throw new RuntimeException("Missing closing parenthesis");
-                } else if ((ch >= '0' && ch <= '9') || ch == '.') { // numbers
+                    if (!eat(')')) throw new RuntimeException("Missing ')'");
+                } else if ((ch >= '0' && ch <= '9') || ch == '.') {
                     while ((ch >= '0' && ch <= '9') || ch == '.') nextChar();
                     x = Double.parseDouble(str.substring(startPos, this.pos));
-                } else if (ch >= 'a' && ch <= 'z') { // functions
+                } else if (ch >= 'a' && ch <= 'z') {
                     while (ch >= 'a' && ch <= 'z') nextChar();
                     String func = str.substring(startPos, this.pos);
-                    if (eat('(')) {
-                        x = parseExpression();
-                        if (!eat(')')) throw new RuntimeException("Missing closing parenthesis after function " + func);
-                    } else {
-                        x = parseFactor();
+                    
+                    if (func.equals("pi")) x = Math.PI;
+                    else if (func.equals("e")) x = Math.E;
+                    else {
+                        if (eat('(')) {
+                            x = parseExpression();
+                            if (!eat(')')) throw new RuntimeException("Missing ')' after " + func);
+                        } else {
+                            x = parseFactor();
+                        }
+                        if (func.equals("sqrt")) x = Math.sqrt(x);
+                        else if (func.equals("sin")) x = Math.sin(Math.toRadians(x));
+                        else if (func.equals("cos")) x = Math.cos(Math.toRadians(x));
+                        else if (func.equals("tan")) x = Math.tan(Math.toRadians(x));
+                        else if (func.equals("log")) x = Math.log10(x);
+                        else if (func.equals("ln")) x = Math.log(x);
+                        else if (func.equals("abs")) x = Math.abs(x);
+                        else throw new RuntimeException("Unknown function: " + func);
                     }
-                    if (func.equals("sqrt")) x = Math.sqrt(x);
-                    else if (func.equals("sin")) x = Math.sin(Math.toRadians(x));
-                    else if (func.equals("cos")) x = Math.cos(Math.toRadians(x));
-                    else if (func.equals("tan")) x = Math.tan(Math.toRadians(x));
-                    else if (func.equals("log")) x = Math.log10(x);
-                    else if (func.equals("ln")) x = Math.log(x);
-                    else if (func.equals("abs")) x = Math.abs(x);
-                    else throw new RuntimeException("Unknown function: " + func);
                 } else {
                     throw new RuntimeException("Unexpected: " + (char)ch);
                 }
 
-                if (eat('^')) x = Math.pow(x, parseFactor()); // exponentiation
-                if (eat('!')) x = factorial((int)x); // factorial
+                if (eat('^')) x = Math.pow(x, parseFactor());
+                if (eat('!')) x = factorial((int)x);
 
                 return x;
             }
